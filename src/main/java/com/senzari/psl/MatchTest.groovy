@@ -156,7 +156,7 @@ class YearSimilarity implements ExternalFunction {
 
     @Override
     public double getValue(ReadOnlyDatabase db, GroundTerm... args) {
-        return Integer.parseInt(args[0].toString()) == Integer.parseInt(args[1].toString()) ? 1.0 : 0.0;
+        return Integer.parseInt(args[0]) == Integer.parseInt(args[1]) ? 1.0 : 0.0;
     }
 
 }
