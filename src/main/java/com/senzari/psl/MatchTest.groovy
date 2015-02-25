@@ -50,12 +50,11 @@ PSLModel m = new PSLModel(this, data)
  * We create three predicates in the model, giving their names and list of argument types
  */
 
-m.add predicate: "artistName" , types: [ArgumentType.UniqueID, ArgumentType.String]
+//m.add predicate: "artistName" , types: [ArgumentType.UniqueID, ArgumentType.String]
 m.add predicate: "trackTitle" , types: [ArgumentType.UniqueID, ArgumentType.String]
-//m.add predicate: "trackYear" , types: [ArgumentType.UniqueID, ArgumentType.Integer]
-m.add predicate: "trackArtist" , types: [ArgumentType.UniqueID, ArgumentType.UniqueID]
+m.add predicate: "trackYear" , types: [ArgumentType.UniqueID, ArgumentType.Integer]
+m.add predicate: "trackArtist" , types: [ArgumentType.UniqueID, ArgumentType.String]
 
-m.add predicate: "sameArtist", types: [ArgumentType.UniqueID, ArgumentType.UniqueID]
 m.add predicate: "sameTrack", types: [ArgumentType.UniqueID, ArgumentType.UniqueID]
 
 /*
@@ -63,7 +62,7 @@ m.add predicate: "sameTrack", types: [ArgumentType.UniqueID, ArgumentType.Unique
  * Note that we can use any implementation of ExternalFunction that acts on two strings!
  */
 m.add function: "sameName" , implementation: new LevenshteinSimilarity()
-//m.add function: "sameYear" , implementation: new YearSimilarity()
+m.add function: "sameYear" , implementation: new YearSimilarity()
 
 /*
  * Having added all the predicates we need to represent our problem, we finally insert some rules into the model.
@@ -74,11 +73,11 @@ m.add function: "sameName" , implementation: new LevenshteinSimilarity()
  * 'A ^ B' is a shorthand syntax for nonsymmetric(A,B), which means that in the grounding of the rule,
  * PSL does not ground the symmetric case.
  */
-m.add rule : ( artistName(A,AName) & artistName(B,BName) & (A ^ B) & sameName(AName,BName) ) >> sameArtist(A,B),  weight : 5
+//m.add rule : ( artistName(A,AName) & artistName(B,BName) & (A ^ B) & sameName(AName,BName) ) >> sameArtist(A,B),  weight : 5
 
 m.add rule : ( trackTitle(A,AName) & trackTitle(B,BName) & (A ^ B) & sameName(AName,BName)
-        //& trackYear(A,AYear) & trackYear(B,BYear) & sameYear(AYear,BYear)
-        & trackArtist(A, AArtist) & trackArtist(B, BArtist) & (A ^ B) & sameArtist(AArtist, BArtist)) >> sameTrack(A,B),  weight : 5
+        & trackYear(A,AYear) & trackYear(B,BYear) & sameYear(AYear,BYear)
+        & trackArtist(A, AArtist) & trackArtist(B, BArtist) & (A ^ B) & sameName(AArtist, BArtist)) >> sameTrack(A,B),  weight : 5
 
 /* Now, we move on to defining rules with sets. Before we can use sets in rules, we have to define how we would like those sets
  * to be compared. For this we define the set comparison predicate 'sameFriends' which compares two sets of friends. For each
@@ -101,9 +100,9 @@ m.add rule : ( trackTitle(A,AName) & trackTitle(B,BName) & (A ^ B) & sameName(AN
  * in the other social network. To do so, we define two partial functional constraints where the latter is on the inverse.
  * We also say that samePerson must be symmetric, i.e., samePerson(p1, p2) == samePerson(p2, p1).
  */
-m.add PredicateConstraint.PartialFunctional , on : sameArtist
-m.add PredicateConstraint.PartialInverseFunctional , on : sameArtist
-m.add PredicateConstraint.Symmetric, on : sameArtist
+//m.add PredicateConstraint.PartialFunctional , on : sameArtist
+//m.add PredicateConstraint.PartialInverseFunctional , on : sameArtist
+//m.add PredicateConstraint.Symmetric, on : sameArtist
 m.add PredicateConstraint.PartialFunctional , on : sameTrack
 m.add PredicateConstraint.PartialInverseFunctional , on : sameTrack
 m.add PredicateConstraint.Symmetric, on : sameTrack
@@ -114,7 +113,6 @@ m.add PredicateConstraint.Symmetric, on : sameTrack
  * people are not the samePerson with a little bit of weight. This can be overridden with evidence as defined
  * in the previous rules.
  */
-m.add rule: ~sameArtist(A,B), weight: 1
 m.add rule: ~sameTrack(A,B), weight: 1
 
 println m;
@@ -122,27 +120,26 @@ println m;
 def dir = '/data/proc/psl/testData/';
 def partition = new Partition(0);
 
-def insert = data.getInserter(artistName, partition);
-InserterUtils.loadDelimitedData(insert, dir+"artistName");
+//def insert = data.getInserter(artistName, partition);
+//InserterUtils.loadDelimitedData(insert, dir+"artistName");
 
 insert = data.getInserter(trackTitle, partition);
 InserterUtils.loadDelimitedData(insert, dir+"trackTitle");
 
-//insert = data.getInserter(trackYear, partition);
-//InserterUtils.loadDelimitedData(insert, dir+"trackYear");
+insert = data.getInserter(trackYear, partition);
+InserterUtils.loadDelimitedData(insert, dir+"trackYear");
 
 insert = data.getInserter(trackArtist, partition);
 InserterUtils.loadDelimitedData(insert, dir+"trackArtist");
 
 
-Database db = data.getDatabase(partition, [artistName, trackTitle, trackArtist] as Set);
-//Database db = data.getDatabase(partition, [artistName, trackTitle, trackYear, trackArtist] as Set);
+Database db = data.getDatabase(partition, [TrackTitle, TrackArtist, TrackYear] as Set);
 LazyMPEInference inferenceApp = new LazyMPEInference(m, db, config);
 inferenceApp.mpeInference();
 inferenceApp.close();
 
 println "Inference results with hand-defined weights:"
-for (GroundAtom atom : Queries.getAllAtoms(db, SamePerson))
+for (GroundAtom atom : Queries.getAllAtoms(db, SameTrack))
     println atom.toString() + "\t" + atom.getValue();
 
 class YearSimilarity implements ExternalFunction {
