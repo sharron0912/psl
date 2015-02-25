@@ -23,7 +23,11 @@ import edu.umd.cs.psl.model.atom.GroundAtom;
 import edu.umd.cs.psl.model.function.ExternalFunction;
 import edu.umd.cs.psl.ui.functions.textsimilarity.*
 import edu.umd.cs.psl.ui.loading.InserterUtils;
-import edu.umd.cs.psl.util.database.Queries;
+import edu.umd.cs.psl.util.database.Queries
+
+import java.text.Normalizer
+import java.util.regex.Pattern;
+import org.apache.lucene.search.spell.LevensteinDistance;
 
 /*
  * The first thing we need to do is initialize a ConfigBundle and a DataStore
@@ -61,7 +65,8 @@ m.add predicate: "sameTrack", types: [ArgumentType.UniqueID, ArgumentType.Unique
  * Now, we define a string similarity function bound to a predicate.
  * Note that we can use any implementation of ExternalFunction that acts on two strings!
  */
-m.add function: "sameName" , implementation: new LevenshteinSimilarity()
+//m.add function: "sameName" , implementation: new LevenshteinSimilarity()
+m.add function: "sameName" , implementation: new StringSimilarity()
 m.add function: "sameYear" , implementation: new YearSimilarity()
 
 /*
@@ -166,4 +171,35 @@ class YearSimilarity implements ExternalFunction {
         }
     }
 
+}
+
+class StringSimilarity implements ExternalFunction {
+
+    @Override
+    public int getArity() {
+        return 2;
+    }
+
+    @Override
+    public ArgumentType[] getArgumentTypes() {
+        return [ArgumentType.String, ArgumentType.String].toArray();
+    }
+
+    @Override
+    public double getValue(ReadOnlyDatabase db, GroundTerm... args) {
+        def levenshtein = new LevensteinDistance();
+        def score = levenshtein.getDistance(slugify(args[0].toString().replaceAll("\\s", "")), slugify(args[1].toString().replaceAll("\\s", "")));
+        return score;
+    }
+
+    def slugify(String text) {
+        Pattern NONLATIN = Pattern.compile("[^\\w:-]");
+        Pattern WHITESPACE = Pattern.compile("[\\s]");
+
+        String nowhitespace = WHITESPACE.matcher(text).replaceAll(":");
+        String normalized = Normalizer.normalize(nowhitespace, Normalizer.Form.NFD);
+        String slug = NONLATIN.matcher(normalized).replaceAll("");
+        String result =  slug.replace(":", " ").replaceAll("[\\s]+", " ").toLowerCase(Locale.ENGLISH);
+        return result;
+    }
 }
