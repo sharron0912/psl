@@ -78,14 +78,14 @@ m.add rule : ( artistName(A,AName) & artistName(B,BName) & (A ^ B) & sameName(AN
 
 m.add rule : ( trackTitle(A,AName) & trackTitle(B,BName) & (A ^ B) & sameName(AName,BName)
         //& trackYear(A,AYear) & trackYear(B,BYear) & sameYear(AYear,BYear)
-        & trackArtist(A, AArtist) & trackArtist(B, BArtist) & (A ^ B) & sameArtist(AArtist, BArtist)) >> sameTrack(A,BA),  weight : 5
+        & trackArtist(A, AArtist) & trackArtist(B, BArtist) & (A ^ B) & sameArtist(AArtist, BArtist)) >> sameTrack(A,B),  weight : 5
 
 /* Now, we move on to defining rules with sets. Before we can use sets in rules, we have to define how we would like those sets
  * to be compared. For this we define the set comparison predicate 'sameFriends' which compares two sets of friends. For each
  * set comparison predicate, we need to specify the type of aggregator function to use, in this case its the Jaccard equality,
  * and the predicate which is used for comparison (which must be binary). Note that you can also define your own aggregator functions.
  */
-m.add setcomparison: "sameTracks" , using: SetComparison.Equality, on : sameTrack
+//m.add setcomparison: "sameTracks" , using: SetComparison.Equality, on : sameTrack
 
 /* Having defined a set comparison predicate, we can apply it in a rule. The body of the following rule is as above. However,
  * in the head, we use the 'sameFriends' set comparison to compare two sets defined using curly braces. To identify the elements
@@ -131,12 +131,12 @@ InserterUtils.loadDelimitedData(insert, dir+"trackTitle");
 //insert = data.getInserter(trackYear, partition);
 //InserterUtils.loadDelimitedData(insert, dir+"trackYear");
 
-insert = data.getInserter(artistHasTracks, partition);
-InserterUtils.loadDelimitedData(insert, dir+"artistHasTracks");
+insert = data.getInserter(trackArtist, partition);
+InserterUtils.loadDelimitedData(insert, dir+"trackArtist");
 
 
-Database db = data.getDatabase(partition, [artistName, trackTitle, artistHasTracks] as Set);
-//Database db = data.getDatabase(partition, [artistName, trackTitle, trackYear, artistHasTracks] as Set);
+Database db = data.getDatabase(partition, [artistName, trackTitle, trackArtist] as Set);
+//Database db = data.getDatabase(partition, [artistName, trackTitle, trackYear, trackArtist] as Set);
 LazyMPEInference inferenceApp = new LazyMPEInference(m, db, config);
 inferenceApp.mpeInference();
 inferenceApp.close();
