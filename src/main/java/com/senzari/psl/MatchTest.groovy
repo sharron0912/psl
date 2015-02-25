@@ -75,9 +75,9 @@ m.add function: "sameYear" , implementation: new YearSimilarity()
  */
 //m.add rule : ( artistName(A,AName) & artistName(B,BName) & (A ^ B) & sameName(AName,BName) ) >> sameArtist(A,B),  weight : 5
 
-m.add rule : ( trackTitle(A,AName) & trackTitle(B,BName) & (A ^ B) & sameName(AName,BName)
-        & trackYear(A,AYear) & trackYear(B,BYear) & sameYear(AYear,BYear)
-        & trackArtist(A, AArtist) & trackArtist(B, BArtist) & (A ^ B) & sameName(AArtist, BArtist)) >> sameTrack(A,B),  weight : 5
+m.add rule : ( trackTitle(A,AName) & trackTitle(B,BName) & (A ^ B) & sameName(AName,BName)) >> sameTrack(A,B),  weight : 5
+m.add rule : ( trackYear(A,AYear) & trackYear(B,BYear) & sameYear(AYear,BYear)) >> sameTrack(A,B),  weight : 3
+m.add rule : (trackArtist(A, AArtist) & trackArtist(B, BArtist) & (A ^ B) & sameName(AArtist, BArtist)) >> sameTrack(A,B),  weight : 5
 
 /* Now, we move on to defining rules with sets. Before we can use sets in rules, we have to define how we would like those sets
  * to be compared. For this we define the set comparison predicate 'sameFriends' which compares two sets of friends. For each
