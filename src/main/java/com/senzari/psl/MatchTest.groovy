@@ -138,9 +138,12 @@ LazyMPEInference inferenceApp = new LazyMPEInference(m, db, config);
 inferenceApp.mpeInference();
 inferenceApp.close();
 
+resultFile = new File("${dir}output")
+if(resultFile.exists())
+    resultFile.delete()
 println "Inference results with hand-defined weights:"
 for (GroundAtom atom : Queries.getAllAtoms(db, SameTrack))
-    println atom.toString() + "\t" + atom.getValue();
+    resultFile << atom.toString() + "\t" + atom.getValue() + "\n";
 
 class YearSimilarity implements ExternalFunction {
 
