@@ -52,7 +52,7 @@ PSLModel m = new PSLModel(this, data)
 
 //m.add predicate: "artistName" , types: [ArgumentType.UniqueID, ArgumentType.String]
 m.add predicate: "trackTitle" , types: [ArgumentType.UniqueID, ArgumentType.String]
-m.add predicate: "trackYear" , types: [ArgumentType.UniqueID, ArgumentType.Integer]
+m.add predicate: "trackYear" , types: [ArgumentType.UniqueID, ArgumentType.String]
 m.add predicate: "trackArtist" , types: [ArgumentType.UniqueID, ArgumentType.String]
 
 m.add predicate: "sameTrack", types: [ArgumentType.UniqueID, ArgumentType.UniqueID]
@@ -151,7 +151,7 @@ class YearSimilarity implements ExternalFunction {
 
     @Override
     public ArgumentType[] getArgumentTypes() {
-        return [ArgumentType.Integer, ArgumentType.Integer].toArray();
+        return [ArgumentType.String, ArgumentType.String].toArray();
     }
 
     @Override
