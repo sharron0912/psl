@@ -53,18 +53,18 @@ PSLModel m = new PSLModel(this, data)
 /*
  * We create three predicates in the model, giving their names and list of argument types
  */
-
-//m.add predicate: "artistName" , types: [ArgumentType.UniqueID, ArgumentType.String]
 m.add predicate: "trackTitle" , types: [ArgumentType.UniqueID, ArgumentType.String]
 m.add predicate: "trackArtist" , types: [ArgumentType.UniqueID, ArgumentType.String]
 m.add predicate: "trackAlbum" , types: [ArgumentType.UniqueID, ArgumentType.String]
 m.add predicate: "trackYear" , types: [ArgumentType.UniqueID, ArgumentType.String]
+m.add predicate: "artistHasTracks" , types: [ArgumentType.UniqueID, ArgumentType.UniqueID]
 
 m.add predicate: "sameTrack", types: [ArgumentType.UniqueID, ArgumentType.UniqueID]
+m.add predicate: "sameArtist", types: [ArgumentType.UniqueID, ArgumentType.UniqueID]
 
 /*
  * Now, we define a string similarity function bound to a predicate.
- * Note that we can use any implementation of ExternalFunction that acts on two strings!
+ * Note that we can use any implementation of ExternalFunction that acts on two swc strings!
  */
 m.add function: "sameName" , implementation: new LevenshteinSimilarity()
 //m.add function: "sameName" , implementation: new StringSimilarity()
@@ -84,14 +84,14 @@ m.add function: "sameYear" , implementation: new YearSimilarity()
 m.add rule : ( trackTitle(A,AName) & trackTitle(B,BName) & (A ^ B) & sameName(AName,BName)) >> sameTrack(A,B),  weight : 5
 m.add rule : ( trackYear(A,AYear) & trackYear(B,BYear) & sameYear(AYear,BYear)) >> sameTrack(A,B),  weight : 3
 m.add rule : (trackArtist(A, AArtist) & trackArtist(B, BArtist) & (A ^ B) & sameName(AArtist, BArtist)) >> sameTrack(A,B),  weight : 5
-m.add rule : (trackAlbum(A, AAlbum) & trackAlbum(B, BAlbum) & (A ^ B) & sameName(AAlbum, BAlbum)) >> sameTrack(A,B),  weight : 5
+m.add rule : (trackAlbum(A, AAlbum) & trackAlbum(B, BAlbum) & (A ^ B) & sameName(AAlbum, BAlbum)) >> sameTrack(A,B),  weight : 3
 
 /* Now, we move on to defining rules with sets. Before we can use sets in rules, we have to define how we would like those sets
  * to be compared. For this we define the set comparison predicate 'sameFriends' which compares two sets of friends. For each
  * set comparison predicate, we need to specify the type of aggregator function to use, in this case its the Jaccard equality,
  * and the predicate which is used for comparison (which must be binary). Note that you can also define your own aggregator functions.
  */
-//m.add setcomparison: "sameTracks" , using: SetComparison.Equality, on : sameTrack
+m.add setcomparison: "sameTracks" , using: SetComparison.Equality, on : sameTrack
 
 /* Having defined a set comparison predicate, we can apply it in a rule. The body of the following rule is as above. However,
  * in the head, we use the 'sameFriends' set comparison to compare two sets defined using curly braces. To identify the elements
@@ -99,7 +99,7 @@ m.add rule : (trackAlbum(A, AAlbum) & trackAlbum(B, BAlbum) & (A ^ B) & sameName
  * via the 'knows' relation, i.e the set { X | knows(A,X) }. The '+' operator denotes set union. We can also qualify a relation with
  * the 'inv' or 'inverse' keyword to denote its inverse.
  */
-//m.add rule :  (sameArtist(A,B) & (A ^ B )) >> sameTracks( {A.artistHasTracks} , {B.artistHasTracks} ) , weight : 5
+m.add rule :  (sameArtist(A,B) & (A ^ B )) >> sameTracks( {A.artistHasTracks} , {B.artistHasTracks} ) , weight : 5
 
 //m.add rule :  (sameTrack(A,B) & (A ^ B )) >> sameArtist( A, B) , weight : 5
 
@@ -107,9 +107,9 @@ m.add rule : (trackAlbum(A, AAlbum) & trackAlbum(B, BAlbum) & (A ^ B) & sameName
  * in the other social network. To do so, we define two partial functional constraints where the latter is on the inverse.
  * We also say that samePerson must be symmetric, i.e., samePerson(p1, p2) == samePerson(p2, p1).
  */
-//m.add PredicateConstraint.PartialFunctional , on : sameArtist
-//m.add PredicateConstraint.PartialInverseFunctional , on : sameArtist
-//m.add PredicateConstraint.Symmetric, on : sameArtist
+m.add PredicateConstraint.PartialFunctional , on : sameArtist
+m.add PredicateConstraint.PartialInverseFunctional , on : sameArtist
+m.add PredicateConstraint.Symmetric, on : sameArtist
 m.add PredicateConstraint.PartialFunctional , on : sameTrack
 m.add PredicateConstraint.PartialInverseFunctional , on : sameTrack
 m.add PredicateConstraint.Symmetric, on : sameTrack
@@ -143,69 +143,26 @@ InserterUtils.loadDelimitedData(insert, dir+"trackAlbum");
 insert = data.getInserter(trackYear, partition);
 InserterUtils.loadDelimitedData(insert, dir+"trackYear");
 
+insert = data.getInserter(artistHasTracks, partition);
+InserterUtils.loadDelimitedData(insert, dir+"artistHasTracks");
 
-Database db = data.getDatabase(partition, [TrackTitle, TrackArtist, TrackAlbum, TrackYear] as Set);
+Database db = data.getDatabase(partition, [TrackTitle, TrackArtist, TrackAlbum, TrackYear, ArtistHasTracks] as Set);
 LazyMPEInference inferenceApp = new LazyMPEInference(m, db, config);
 inferenceApp.mpeInference();
 inferenceApp.close();
 
-resultFile = new File("${dir}output")
-if(resultFile.exists())
-    resultFile.delete()
+trackFile = new File("${dir}output_track")
+if(trackFile.exists())
+    trackFile.delete()
+
+artistFile = new File("${dir}output_artist")
+if(artistFile.exists())
+    artistFile.delete()
+
 println "Inference results with hand-defined weights:"
 for (GroundAtom atom : Queries.getAllAtoms(db, SameTrack))
-    resultFile << atom.toString() + "\t" + atom.getValue() + "\n";
+    trackFile << atom.toString() + "\t" + atom.getValue() + "\n";
 
-class YearSimilarity implements ExternalFunction {
+for (GroundAtom atom : Queries.getAllAtoms(db, SameArtist))
+    artistFile << atom.toString() + "\t" + atom.getValue() + "\n";
 
-    @Override
-    public int getArity() {
-        return 2;
-    }
-
-    @Override
-    public ArgumentType[] getArgumentTypes() {
-        return [ArgumentType.String, ArgumentType.String].toArray();
-    }
-
-    @Override
-    public double getValue(ReadOnlyDatabase db, GroundTerm... args) {
-        try {
-            return Integer.parseInt(args[0].getValue()) == Integer.parseInt(args[1].getValue()) ? 1.0 : 0.0;
-        }catch(Exception e){
-            return 0.0
-        }
-    }
-
-}
-
-class StringSimilarity implements ExternalFunction {
-
-    @Override
-    public int getArity() {
-        return 2;
-    }
-
-    @Override
-    public ArgumentType[] getArgumentTypes() {
-        return [ArgumentType.String, ArgumentType.String].toArray();
-    }
-
-    @Override
-    public double getValue(ReadOnlyDatabase db, GroundTerm... args) {
-        def levenshtein = new LevensteinDistance();
-        def score = levenshtein.getDistance(slugify(args[0].toString().replaceAll("\\s", "")), slugify(args[1].toString().replaceAll("\\s", "")));
-        return score;
-    }
-
-    def slugify(String text) {
-        Pattern NONLATIN = Pattern.compile("[^\\w:-]");
-        Pattern WHITESPACE = Pattern.compile("[\\s]");
-
-        String nowhitespace = WHITESPACE.matcher(text).replaceAll(":");
-        String normalized = Normalizer.normalize(nowhitespace, Normalizer.Form.NFD);
-        String slug = NONLATIN.matcher(normalized).replaceAll("");
-        String result =  slug.replace(":", " ").replaceAll("[\\s]+", " ").toLowerCase(Locale.ENGLISH);
-        return result;
-    }
-}
