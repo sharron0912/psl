@@ -56,8 +56,9 @@ PSLModel m = new PSLModel(this, data)
 
 //m.add predicate: "artistName" , types: [ArgumentType.UniqueID, ArgumentType.String]
 m.add predicate: "trackTitle" , types: [ArgumentType.UniqueID, ArgumentType.String]
-m.add predicate: "trackYear" , types: [ArgumentType.UniqueID, ArgumentType.String]
 m.add predicate: "trackArtist" , types: [ArgumentType.UniqueID, ArgumentType.String]
+m.add predicate: "trackAlbum" , types: [ArgumentType.UniqueID, ArgumentType.String]
+m.add predicate: "trackYear" , types: [ArgumentType.UniqueID, ArgumentType.String]
 
 m.add predicate: "sameTrack", types: [ArgumentType.UniqueID, ArgumentType.UniqueID]
 
@@ -65,8 +66,8 @@ m.add predicate: "sameTrack", types: [ArgumentType.UniqueID, ArgumentType.Unique
  * Now, we define a string similarity function bound to a predicate.
  * Note that we can use any implementation of ExternalFunction that acts on two strings!
  */
-//m.add function: "sameName" , implementation: new LevenshteinSimilarity()
-m.add function: "sameName" , implementation: new StringSimilarity()
+m.add function: "sameName" , implementation: new LevenshteinSimilarity()
+//m.add function: "sameName" , implementation: new StringSimilarity()
 m.add function: "sameYear" , implementation: new YearSimilarity()
 
 /*
@@ -83,6 +84,7 @@ m.add function: "sameYear" , implementation: new YearSimilarity()
 m.add rule : ( trackTitle(A,AName) & trackTitle(B,BName) & (A ^ B) & sameName(AName,BName)) >> sameTrack(A,B),  weight : 5
 m.add rule : ( trackYear(A,AYear) & trackYear(B,BYear) & sameYear(AYear,BYear)) >> sameTrack(A,B),  weight : 3
 m.add rule : (trackArtist(A, AArtist) & trackArtist(B, BArtist) & (A ^ B) & sameName(AArtist, BArtist)) >> sameTrack(A,B),  weight : 5
+m.add rule : (trackAlbum(A, AAlbum) & trackAlbum(B, BAlbum) & (A ^ B) & sameName(AAlbum, BAlbum)) >> sameTrack(A,B),  weight : 5
 
 /* Now, we move on to defining rules with sets. Before we can use sets in rules, we have to define how we would like those sets
  * to be compared. For this we define the set comparison predicate 'sameFriends' which compares two sets of friends. For each
@@ -131,14 +133,18 @@ def partition = new Partition(0);
 insert = data.getInserter(trackTitle, partition);
 InserterUtils.loadDelimitedData(insert, dir+"trackTitle");
 
-insert = data.getInserter(trackYear, partition);
-InserterUtils.loadDelimitedData(insert, dir+"trackYear");
 
 insert = data.getInserter(trackArtist, partition);
 InserterUtils.loadDelimitedData(insert, dir+"trackArtist");
 
+insert = data.getInserter(trackAlbum, partition);
+InserterUtils.loadDelimitedData(insert, dir+"trackAlbum");
 
-Database db = data.getDatabase(partition, [TrackTitle, TrackArtist, TrackYear] as Set);
+insert = data.getInserter(trackYear, partition);
+InserterUtils.loadDelimitedData(insert, dir+"trackYear");
+
+
+Database db = data.getDatabase(partition, [TrackTitle, TrackArtist, TrackAlbum, TrackYear] as Set);
 LazyMPEInference inferenceApp = new LazyMPEInference(m, db, config);
 inferenceApp.mpeInference();
 inferenceApp.close();
