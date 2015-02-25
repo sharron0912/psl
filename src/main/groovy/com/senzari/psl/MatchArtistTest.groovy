@@ -60,7 +60,6 @@ m.add predicate: "trackYear" , types: [ArgumentType.UniqueID, ArgumentType.Strin
 m.add predicate: "artistHasTracks" , types: [ArgumentType.UniqueID, ArgumentType.UniqueID]
 
 m.add predicate: "sameTrack", types: [ArgumentType.UniqueID, ArgumentType.UniqueID]
-m.add predicate: "sameArtist", types: [ArgumentType.UniqueID, ArgumentType.UniqueID]
 
 /*
  * Now, we define a string similarity function bound to a predicate.
@@ -91,7 +90,7 @@ m.add rule : (trackAlbum(A, AAlbum) & trackAlbum(B, BAlbum) & (A ^ B) & sameName
  * set comparison predicate, we need to specify the type of aggregator function to use, in this case its the Jaccard equality,
  * and the predicate which is used for comparison (which must be binary). Note that you can also define your own aggregator functions.
  */
-m.add setcomparison: "sameTracks" , using: SetComparison.Equality, on : sameTrack
+
 
 /* Having defined a set comparison predicate, we can apply it in a rule. The body of the following rule is as above. However,
  * in the head, we use the 'sameFriends' set comparison to compare two sets defined using curly braces. To identify the elements
@@ -101,19 +100,15 @@ m.add setcomparison: "sameTracks" , using: SetComparison.Equality, on : sameTrac
  */
 //m.add rule :  (sameArtist(A,B) & (A ^ B )) >> sameTracks( {A.artistHasTracks} , {B.artistHasTracks} ) , weight : 5
 
-m.add rule :  (sameTracks({A.artistHasTracks}, {B.artistHasTracks}) & (A ^ B)) >> sameArtist( A, B) , weight : 5
 
 /* Next, we define some constraints for our model. In this case, we restrict that each person can be aligned to at most one other person
  * in the other social network. To do so, we define two partial functional constraints where the latter is on the inverse.
  * We also say that samePerson must be symmetric, i.e., samePerson(p1, p2) == samePerson(p2, p1).
  */
-m.add PredicateConstraint.PartialFunctional , on : sameArtist
-m.add PredicateConstraint.PartialInverseFunctional , on : sameArtist
-m.add PredicateConstraint.Symmetric, on : sameArtist
+
 m.add PredicateConstraint.PartialFunctional , on : sameTrack
 m.add PredicateConstraint.PartialInverseFunctional , on : sameTrack
 m.add PredicateConstraint.Symmetric, on : sameTrack
-
 
 /*
  * Finally, we define a prior on the inference predicate samePerson. It says that we should assume two
@@ -126,9 +121,6 @@ println m;
 
 def dir = '/data/proc/psl/testData/';
 def partition = new Partition(0);
-
-//def insert = data.getInserter(artistName, partition);
-//InserterUtils.loadDelimitedData(insert, dir+"artistName");
 
 insert = data.getInserter(trackTitle, partition);
 InserterUtils.loadDelimitedData(insert, dir+"trackTitle");
@@ -143,10 +135,7 @@ InserterUtils.loadDelimitedData(insert, dir+"trackAlbum");
 insert = data.getInserter(trackYear, partition);
 InserterUtils.loadDelimitedData(insert, dir+"trackYear");
 
-insert = data.getInserter(artistHasTracks, partition);
-InserterUtils.loadDelimitedData(insert, dir+"artistHasTracks");
-
-Database db = data.getDatabase(partition, [TrackTitle, TrackArtist, TrackAlbum, TrackYear, ArtistHasTracks] as Set);
+Database db = data.getDatabase(partition, [TrackTitle, TrackArtist, TrackAlbum, TrackYear] as Set);
 LazyMPEInference inferenceApp = new LazyMPEInference(m, db, config);
 inferenceApp.mpeInference();
 inferenceApp.close();
@@ -155,13 +144,33 @@ trackFile = new File("${dir}output_track")
 if(trackFile.exists())
     trackFile.delete()
 
-artistFile = new File("${dir}output_artist")
-if(artistFile.exists())
-    artistFile.delete()
-
 println "Inference results with hand-defined weights:"
 for (GroundAtom atom : Queries.getAllAtoms(db, SameTrack))
     trackFile << atom.toString() + "\t" + atom.getValue() + "\n";
+
+
+
+m.add predicate: "sameArtist", types: [ArgumentType.UniqueID, ArgumentType.UniqueID]
+
+m.add setcomparison: "sameTracks" , using: SetComparison.Equality, on : sameTrack
+
+m.add rule :  (sameTracks({A.artistHasTracks}, {B.artistHasTracks}) & (A ^ B)) >> sameArtist( A, B) , weight : 5
+
+m.add PredicateConstraint.PartialFunctional , on : sameArtist
+m.add PredicateConstraint.PartialInverseFunctional , on : sameArtist
+m.add PredicateConstraint.Symmetric, on : sameArtist
+
+insert = data.getInserter(artistHasTracks, partition);
+InserterUtils.loadDelimitedData(insert, dir+"artistHasTracks");
+
+db = data.getDatabase(partition, [SameTrack, ArtistHasTracks] as Set);
+inferenceApp = new LazyMPEInference(m, db, config);
+inferenceApp.mpeInference();
+inferenceApp.close();
+
+artistFile = new File("${dir}output_artist")
+if(artistFile.exists())
+    artistFile.delete()
 
 for (GroundAtom atom : Queries.getAllAtoms(db, SameArtist))
     artistFile << atom.toString() + "\t" + atom.getValue() + "\n";
