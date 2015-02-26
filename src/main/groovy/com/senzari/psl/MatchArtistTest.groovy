@@ -100,9 +100,9 @@ m.add rule : (trackAlbum(A, AAlbum) & trackAlbum(B, BAlbum) & (A ^ B) & sameName
  * the 'inv' or 'inverse' keyword to denote its inverse.
  */
 
-m.add setcomparison: "sameTracks" , using: SetComparison.Equality, on : sameTrack
+//m.add setcomparison: "sameTracks" , using: SetComparison.Equality, on : sameTrack
 
-m.add rule :  (sameArtist(A,B) & (A ^ B )) >> sameTracks( {A.artistHasTracks} , {B.artistHasTracks} ) , weight : 3
+//m.add rule :  (sameArtist(A,B) & (A ^ B )) >> sameTracks( {A.artistHasTracks} , {B.artistHasTracks} ) , weight : 3
 
 //m.add rule :  (sameTracks({A.artistHasTracks}, {B.artistHasTracks}) & (A ^ B)) >> sameArtist( A, B) , weight : 5
 
@@ -143,10 +143,10 @@ InserterUtils.loadDelimitedData(insert, dir+"trackAlbum");
 insert = data.getInserter(trackYear, p0);
 InserterUtils.loadDelimitedData(insert, dir+"trackYear");
 
-insert = data.getInserter(artistHasTracks, p0);
-InserterUtils.loadDelimitedData(insert, dir+"artistHasTracks");
+//insert = data.getInserter(artistHasTracks, p0);
+//InserterUtils.loadDelimitedData(insert, dir+"artistHasTracks");
 
-Database db = data.getDatabase(p0, [TrackTitle, TrackArtist, TrackAlbum, TrackYear, ArtistHasTracks] as Set);
+Database db = data.getDatabase(p0, [TrackTitle, TrackArtist, TrackAlbum, TrackYear] as Set);
 LazyMPEInference inferenceApp = new LazyMPEInference(m, db, config);
 inferenceApp.mpeInference();
 inferenceApp.close();
@@ -160,16 +160,17 @@ predictTracks = Queries.getAllAtoms(db, SameTrack)
 for (GroundAtom atom : predictTracks)
     trackFile << atom.toString() + "\t" + atom.getValue() + "\n";
 
+/*
 artistFile = new File("${dir}output_artist")
 if(artistFile.exists())
     artistFile.delete()
 
 for (GroundAtom atom : Queries.getAllAtoms(db, SameArtist))
     artistFile << atom.toString() + "\t" + atom.getValue() + "\n";
+*/
 
 
-/*
-m.add predicate: "sameArtist", types: [ArgumentType.UniqueID, ArgumentType.UniqueID]
+//m.add predicate: "sameArtist", types: [ArgumentType.UniqueID, ArgumentType.UniqueID]
 
 m.add setcomparison: "sameTracks" , using: SetComparison.Equality, on : sameTrack
 
@@ -194,4 +195,3 @@ if(artistFile.exists())
 for (GroundAtom atom : Queries.getAllAtoms(db, SameArtist))
     artistFile << atom.toString() + "\t" + atom.getValue() + "\n";
 
-*/
