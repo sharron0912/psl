@@ -100,7 +100,7 @@ m.add rule : (trackAlbum(A, AAlbum) & trackAlbum(B, BAlbum) & (A ^ B) & sameName
  * the 'inv' or 'inverse' keyword to denote its inverse.
  */
 
-m.add setcomparison: "sameTracks" , using: SetComparison.CrossEquality, on : sameTrack
+m.add setcomparison: "sameTracks" , using: SetComparison.Equality, on : sameTrack
 
 //m.add rule : (artistHasTracks(A, ATrack) & artistHasTracks(B, BTrack) & sameTrack(ATrack, BTrack) & (A ^ B)) >> sameArtist(A, B) , weight : 5
 
