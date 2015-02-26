@@ -143,8 +143,8 @@ InserterUtils.loadDelimitedData(insert, dir+"trackAlbum");
 insert = data.getInserter(trackYear, p0);
 InserterUtils.loadDelimitedData(insert, dir+"trackYear");
 
-//insert = data.getInserter(artistHasTracks, p0);
-//InserterUtils.loadDelimitedData(insert, dir+"artistHasTracks");
+insert = data.getInserter(artistHasTracks, p0);
+InserterUtils.loadDelimitedData(insert, dir+"artistHasTracks");
 
 Database db = data.getDatabase(p0, [TrackTitle, TrackArtist, TrackAlbum, TrackYear] as Set);
 LazyMPEInference inferenceApp = new LazyMPEInference(m, db, config);
@@ -180,8 +180,8 @@ m.add PredicateConstraint.PartialFunctional , on : sameArtist
 m.add PredicateConstraint.PartialInverseFunctional , on : sameArtist
 m.add PredicateConstraint.Symmetric, on : sameArtist
 
-insert = data.getInserter(artistHasTracks, p0);
-InserterUtils.loadDelimitedData(insert, dir+"artistHasTracks");
+//insert = data.getInserter(artistHasTracks, p0);
+//InserterUtils.loadDelimitedData(insert, dir+"artistHasTracks");
 
 db = data.getDatabase(p0, [SameTrack, ArtistHasTracks] as Set);
 inferenceApp = new LazyMPEInference(m, db, config);
