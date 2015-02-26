@@ -81,7 +81,7 @@ m.add function: "sameYear" , implementation: new YearSimilarity()
  */
 //m.add rule : ( artistName(A,AName) & artistName(B,BName) & (A ^ B) & sameName(AName,BName) ) >> sameArtist(A,B),  weight : 5
 
-m.add rule : ( trackTitle(A,AName) & trackTitle(B,BName) & (A ^ B) & sameName(AName,BName)) >> sameTrack(A,B),  weight : 50
+m.add rule : ( trackTitle(A,AName) & trackTitle(B,BName) & (A ^ B) & sameName(AName,BName)) >> sameTrack(A,B),  weight : 5
 m.add rule : ( trackYear(A,AYear) & trackYear(B,BYear) & sameYear(AYear,BYear)) >> sameTrack(A,B),  weight : 3
 m.add rule : (trackArtist(A, AArtist) & trackArtist(B, BArtist) & (A ^ B) & sameName(AArtist, BArtist)) >> sameTrack(A,B),  weight : 5
 m.add rule : (trackAlbum(A, AAlbum) & trackAlbum(B, BAlbum) & (A ^ B) & sameName(AAlbum, BAlbum)) >> sameTrack(A,B),  weight : 3
@@ -100,9 +100,9 @@ m.add rule : (trackAlbum(A, AAlbum) & trackAlbum(B, BAlbum) & (A ^ B) & sameName
  * the 'inv' or 'inverse' keyword to denote its inverse.
  */
 
-//m.add setcomparison: "sameTracks" , using: SetComparison.Equality, on : sameTrack
+m.add setcomparison: "sameTracks" , using: SetComparison.Equality, on : sameTrack
 
-//m.add rule :  (sameArtist(A,B) & (A ^ B )) >> sameTracks( {A.artistHasTracks} , {B.artistHasTracks} ) , weight : 3
+m.add rule :  (sameArtist(A,B) & (A ^ B )) >> sameTracks( {A.artistHasTracks} , {B.artistHasTracks} ) , weight : 3
 
 m.add rule : (artistHasTracks(A, ATrack) & artistHasTracks(B, BTrack) & sameTrack(ATrack, BTrack) & (A ^ B)) >> sameArtist(A, B) , weight : 5
 
