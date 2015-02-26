@@ -100,11 +100,11 @@ m.add rule : (trackAlbum(A, AAlbum) & trackAlbum(B, BAlbum) & (A ^ B) & sameName
  * the 'inv' or 'inverse' keyword to denote its inverse.
  */
 
-//m.add setcomparison: "sameTracks" , using: SetComparison.Equality, on : sameTrack
+m.add setcomparison: "sameTracks" , using: SetComparison.Equality, on : sameTrack
 
 //m.add rule :  (sameArtist(A,B) & (A ^ B )) >> sameTracks( {A.artistHasTracks} , {B.artistHasTracks} ) , weight : 3
 
-//m.add rule :  (sameTracks({A.artistHasTracks}, {B.artistHasTracks}) & (A ^ B)) >> sameArtist( A, B) , weight : 5
+m.add rule :  (sameTracks({A.artistHasTracks}, {B.artistHasTracks}) & (A ^ B)) >> sameArtist( A, B) , weight : 5
 
 /* Next, we define some constraints for our model. In this case, we restrict that each person can be aligned to at most one other person
  * in the other social network. To do so, we define two partial functional constraints where the latter is on the inverse.
@@ -124,6 +124,7 @@ m.add PredicateConstraint.Symmetric, on : sameArtist
  * in the previous rules.
  */
 m.add rule: ~sameTrack(A,B), weight: 1
+m.add rule: ~sameArtist(A,B), weight: 1
 
 println m;
 
@@ -146,7 +147,7 @@ InserterUtils.loadDelimitedData(insert, dir+"trackYear");
 insert = data.getInserter(artistHasTracks, p0);
 InserterUtils.loadDelimitedData(insert, dir+"artistHasTracks");
 
-Database db = data.getDatabase(p0, [TrackTitle, TrackArtist, TrackAlbum, TrackYear] as Set);
+Database db = data.getDatabase(p0, [TrackTitle, TrackArtist, TrackAlbum, TrackYear, ArtistHasTracks] as Set);
 LazyMPEInference inferenceApp = new LazyMPEInference(m, db, config);
 inferenceApp.mpeInference();
 inferenceApp.close();
@@ -160,17 +161,17 @@ predictTracks = Queries.getAllAtoms(db, SameTrack)
 for (GroundAtom atom : predictTracks)
     trackFile << atom.toString() + "\t" + atom.getValue() + "\n";
 
-/*
+
 artistFile = new File("${dir}output_artist")
 if(artistFile.exists())
     artistFile.delete()
 
 for (GroundAtom atom : Queries.getAllAtoms(db, SameArtist))
     artistFile << atom.toString() + "\t" + atom.getValue() + "\n";
-*/
 
 
-//m.add predicate: "sameArtist", types: [ArgumentType.UniqueID, ArgumentType.UniqueID]
+/*
+m.add predicate: "sameArtist", types: [ArgumentType.UniqueID, ArgumentType.UniqueID]
 
 m.add setcomparison: "sameTracks" , using: SetComparison.Equality, on : sameTrack
 
@@ -180,10 +181,12 @@ m.add PredicateConstraint.PartialFunctional , on : sameArtist
 m.add PredicateConstraint.PartialInverseFunctional , on : sameArtist
 m.add PredicateConstraint.Symmetric, on : sameArtist
 
-//insert = data.getInserter(artistHasTracks, p0);
-//InserterUtils.loadDelimitedData(insert, dir+"artistHasTracks");
-
 def p1 = new Partition(1);
+insert = data.getInserter(sameTrack, p1);
+
+insert = data.getInserter(artistHasTracks, p1);
+InserterUtils.loadDelimitedData(insert, dir+"artistHasTracks");
+
 db = data.getDatabase(p1, [SameTrack, ArtistHasTracks] as Set);
 inferenceApp = new LazyMPEInference(m, db, config);
 inferenceApp.mpeInference();
@@ -196,3 +199,4 @@ if(artistFile.exists())
 for (GroundAtom atom : Queries.getAllAtoms(db, SameArtist))
     artistFile << atom.toString() + "\t" + atom.getValue() + "\n";
 
+*/
