@@ -183,7 +183,8 @@ m.add PredicateConstraint.Symmetric, on : sameArtist
 //insert = data.getInserter(artistHasTracks, p0);
 //InserterUtils.loadDelimitedData(insert, dir+"artistHasTracks");
 
-db = data.getDatabase(p0, [SameTrack, ArtistHasTracks] as Set);
+def p1 = new Partition(1);
+db = data.getDatabase(p1, [SameTrack, ArtistHasTracks] as Set);
 inferenceApp = new LazyMPEInference(m, db, config);
 inferenceApp.mpeInference();
 inferenceApp.close();
