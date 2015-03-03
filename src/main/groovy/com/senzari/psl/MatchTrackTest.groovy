@@ -64,7 +64,7 @@ m.add predicate: "sameTrack", types: [ArgumentType.UniqueID, ArgumentType.Unique
 
 /*
  * Now, we define a string similarity function bound to a predicate.
- * Note that we can use any implementation of ExternalFunction that acts on two swc trings!
+ * Note that we can use any implementation of ExternalFunction that acts on two swc strings!
  */
 m.add function: "sameName" , implementation: new LevenshteinSimilarity()
 //m.add function: "sameName" , implementation: new StringSimilarity()
@@ -124,7 +124,8 @@ m.add rule: ~sameTrack(A,B), weight: 1
 
 println m;
 
-def dir = '/data/proc/psl/testData/';
+//def dir = '/data/proc/psl/testData/';
+def dir = '/Users/qiusha/dev/senzari/psl/testData/';
 def partition = new Partition(0);
 
 //def insert = data.getInserter(artistName, partition);
@@ -156,6 +157,7 @@ println "Inference results with hand-defined weights:"
 for (GroundAtom atom : Queries.getAllAtoms(db, SameTrack))
     resultFile << atom.toString() + "\t" + atom.getValue() + "\n";
 
+
 class YearSimilarity implements ExternalFunction {
 
     @Override
@@ -178,6 +180,7 @@ class YearSimilarity implements ExternalFunction {
     }
 
 }
+
 
 class StringSimilarity implements ExternalFunction {
 

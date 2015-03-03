@@ -102,10 +102,10 @@ m.add rule : (trackAlbum(A, AAlbum) & trackAlbum(B, BAlbum) & (A ^ B) & sameName
 
 m.add setcomparison: "sameTracks" , using: SetComparison.CrossEquality, on : sameTrack
 
-m.add rule : (artistHasTracks(A, ATrack) & artistHasTracks(B, BTrack) & sameTrack(ATrack, BTrack) & (A ^ B)) >> sameArtist(A, B) , weight : 5
+//m.add rule : (artistHasTracks(A, ATrack) & artistHasTracks(B, BTrack) & sameTrack(ATrack, BTrack) & (A ^ B)) >> sameArtist(A, B) , weight : 5
 
 //m.add rule :  (sameArtist(A, B) & (A ^ B )) >> sameTracks( {A.artistHasTracks} , {B.artistHasTracks} ) , weight : 3
-//m.add rule :  (sameTracks( {A.artistHasTracks} , {B.artistHasTracks} ) & (A ^ B)) >> sameArtist(A, B) , weight : 3
+m.add rule :  ((A ^ B) & sameTracks( {A.artistHasTracks} , {B.artistHasTracks} )) >> sameArtist(A, B) , weight : 3
 
 /* Next, we define some constraints for our model. In this case, we restrict that each person can be aligned to at most one other person
  * in the other social network. To do so, we define two partial functional constraints where the latter is on the inverse.
@@ -129,8 +129,9 @@ m.add rule: ~sameArtist(A,B), weight: 1
 
 println m;
 
-def dir = '/data/proc/psl/testData/';
-def p0 = new Partition(0);
+//def dir = '/data/proc/psl/testData/';
+def dir = '/Users/qiusha/dev/senzari/psl/testData/';
+def p0 = new Partition(1);
 
 insert = data.getInserter(trackTitle, p0);
 InserterUtils.loadDelimitedData(insert, dir+"trackTitle");
@@ -170,34 +171,27 @@ if(artistFile.exists())
 for (GroundAtom atom : Queries.getAllAtoms(db, SameArtist))
     artistFile << atom.toString() + "\t" + atom.getValue() + "\n";
 
-
 /*
-m.add predicate: "sameArtist", types: [ArgumentType.UniqueID, ArgumentType.UniqueID]
+class YearSimilarity implements ExternalFunction {
 
-m.add setcomparison: "sameTracks" , using: SetComparison.Equality, on : sameTrack
+    @Override
+    public int getArity() {
+        return 2;
+    }
 
-m.add rule :  (sameTracks({A.artistHasTracks}, {B.artistHasTracks}) & (A ^ B)) >> sameArtist( A, B) , weight : 5
+    @Override
+    public ArgumentType[] getArgumentTypes() {
+        return [ArgumentType.String, ArgumentType.String].toArray();
+    }
 
-m.add PredicateConstraint.PartialFunctional , on : sameArtist
-m.add PredicateConstraint.PartialInverseFunctional , on : sameArtist
-m.add PredicateConstraint.Symmetric, on : sameArtist
+    @Override
+    public double getValue(ReadOnlyDatabase db, GroundTerm... args) {
+        try {
+            return Integer.parseInt(args[0].getValue()) == Integer.parseInt(args[1].getValue()) ? 1.0 : 0.0;
+        }catch(Exception e){
+            return 0.0
+        }
+    }
 
-def p1 = new Partition(1);
-insert = data.getInserter(sameTrack, p1);
-
-insert = data.getInserter(artistHasTracks, p1);
-InserterUtils.loadDelimitedData(insert, dir+"artistHasTracks");
-
-db = data.getDatabase(p1, [SameTrack, ArtistHasTracks] as Set);
-inferenceApp = new LazyMPEInference(m, db, config);
-inferenceApp.mpeInference();
-inferenceApp.close();
-
-artistFile = new File("${dir}output_artist")
-if(artistFile.exists())
-    artistFile.delete()
-
-for (GroundAtom atom : Queries.getAllAtoms(db, SameArtist))
-    artistFile << atom.toString() + "\t" + atom.getValue() + "\n";
-
+}
 */
