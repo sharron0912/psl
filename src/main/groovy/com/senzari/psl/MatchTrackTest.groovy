@@ -59,6 +59,7 @@ m.add predicate: "trackTitle" , types: [ArgumentType.UniqueID, ArgumentType.Stri
 m.add predicate: "trackArtist" , types: [ArgumentType.UniqueID, ArgumentType.String]
 m.add predicate: "trackAlbum" , types: [ArgumentType.UniqueID, ArgumentType.String]
 m.add predicate: "trackYear" , types: [ArgumentType.UniqueID, ArgumentType.String]
+m.add predicate: "trackSource" , types: [ArgumentType.UniqueID, ArgumentType.String]
 
 m.add predicate: "sameTrack", types: [ArgumentType.UniqueID, ArgumentType.UniqueID]
 
@@ -69,6 +70,7 @@ m.add predicate: "sameTrack", types: [ArgumentType.UniqueID, ArgumentType.Unique
 m.add function: "sameName" , implementation: new LevenshteinSimilarity()
 //m.add function: "sameName" , implementation: new StringSimilarity()
 m.add function: "sameYear" , implementation: new YearSimilarity()
+m.add function: "sameSource", implementation: new SourceSimilarity()
 
 /*
  * Having added all the predicates we need to represent our problem, we finally insert some rules into the model.
@@ -85,6 +87,9 @@ m.add rule : ( trackTitle(A,AName) & trackTitle(B,BName) & (A ^ B) & sameName(AN
 m.add rule : ( trackYear(A,AYear) & trackYear(B,BYear) & sameYear(AYear,BYear)) >> sameTrack(A,B),  weight : 3
 m.add rule : (trackArtist(A, AArtist) & trackArtist(B, BArtist) & (A ^ B) & sameName(AArtist, BArtist)) >> sameTrack(A,B),  weight : 5
 m.add rule : (trackAlbum(A, AAlbum) & trackAlbum(B, BAlbum) & (A ^ B) & sameName(AAlbum, BAlbum)) >> sameTrack(A,B),  weight : 3
+m.add rule : (sameTrack(A,B) & trackSource(A, ASource) & trackSource(B, BSource)) >> ~sameSource(ASource, BSource), constraint : true
+//m.add rule : (trackSource(A, ASource) & trackSource(B, BSource) & sameSource(ASource, BSource)) >> ~sameTrack(A,B), constraint : true
+
 
 /* Now, we move on to defining rules with sets. Before we can use sets in rules, we have to define how we would like those sets
  * to be compared. For this we define the set comparison predicate 'sameFriends' which compares two sets of friends. For each
@@ -114,7 +119,6 @@ m.add PredicateConstraint.PartialFunctional , on : sameTrack
 m.add PredicateConstraint.PartialInverseFunctional , on : sameTrack
 m.add PredicateConstraint.Symmetric, on : sameTrack
 
-
 /*
  * Finally, we define a prior on the inference predicate samePerson. It says that we should assume two
  * people are not the samePerson with a little bit of weight. This can be overridden with evidence as defined
@@ -124,8 +128,8 @@ m.add rule: ~sameTrack(A,B), weight: 1
 
 println m;
 
-//def dir = '/data/proc/psl/testData/';
-def dir = '/Users/qiusha/dev/senzari/psl/testData/';
+def dir = '/data/proc/psl/testData/';
+//def dir = '/Users/qiusha/dev/senzari/psl/testData/';
 def partition = new Partition(0);
 
 //def insert = data.getInserter(artistName, partition);
@@ -144,8 +148,10 @@ InserterUtils.loadDelimitedData(insert, dir+"trackAlbum");
 insert = data.getInserter(trackYear, partition);
 InserterUtils.loadDelimitedData(insert, dir+"trackYear");
 
+insert = data.getInserter(trackSource, partition);
+InserterUtils.loadDelimitedData(insert, dir+"trackSource");
 
-Database db = data.getDatabase(partition, [TrackTitle, TrackArtist, TrackAlbum, TrackYear] as Set);
+Database db = data.getDatabase(partition, [TrackTitle, TrackArtist, TrackAlbum, TrackYear, TrackSource] as Set);
 LazyMPEInference inferenceApp = new LazyMPEInference(m, db, config);
 inferenceApp.mpeInference();
 inferenceApp.close();
@@ -157,7 +163,7 @@ println "Inference results with hand-defined weights:"
 for (GroundAtom atom : Queries.getAllAtoms(db, SameTrack))
     resultFile << atom.toString() + "\t" + atom.getValue() + "\n";
 
-
+/*
 class YearSimilarity implements ExternalFunction {
 
     @Override
@@ -181,7 +187,29 @@ class YearSimilarity implements ExternalFunction {
 
 }
 
+class SourceSimilarity implements ExternalFunction {
 
+    @Override
+    public int getArity() {
+        return 2;
+    }
+
+    @Override
+    public ArgumentType[] getArgumentTypes() {
+        return [ArgumentType.String, ArgumentType.String].toArray();
+    }
+
+    @Override
+    public double getValue(ReadOnlyDatabase db, GroundTerm... args) {
+        try {
+            return args[0].getValue() == args[1].getValue() ? 1.0 : 0.0;
+        }catch(Exception e){
+            return 0.0
+        }
+    }
+
+}
+*/
 class StringSimilarity implements ExternalFunction {
 
     @Override

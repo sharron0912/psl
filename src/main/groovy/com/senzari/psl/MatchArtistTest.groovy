@@ -58,6 +58,8 @@ m.add predicate: "trackArtist" , types: [ArgumentType.UniqueID, ArgumentType.Str
 m.add predicate: "trackAlbum" , types: [ArgumentType.UniqueID, ArgumentType.String]
 m.add predicate: "trackYear" , types: [ArgumentType.UniqueID, ArgumentType.String]
 m.add predicate: "artistHasTracks" , types: [ArgumentType.UniqueID, ArgumentType.UniqueID]
+m.add predicate: "trackSource" , types: [ArgumentType.UniqueID, ArgumentType.String]
+m.add predicate: "artistSource" , types: [ArgumentType.UniqueID, ArgumentType.String]
 
 m.add predicate: "sameTrack", types: [ArgumentType.UniqueID, ArgumentType.UniqueID]
 m.add predicate: "sameArtist", types: [ArgumentType.UniqueID, ArgumentType.UniqueID]
@@ -67,7 +69,7 @@ m.add predicate: "sameArtist", types: [ArgumentType.UniqueID, ArgumentType.Uniqu
  * Note that we can use any implementation of ExternalFunction that acts on two swc strings!
  */
 m.add function: "sameName" , implementation: new LevenshteinSimilarity()
-//m.add function: "sameName" , implementation: new StringSimilarity()
+m.add function: "sameSource" , implementation: new SourceSimilarity()
 m.add function: "sameYear" , implementation: new YearSimilarity()
 
 /*
@@ -81,11 +83,11 @@ m.add function: "sameYear" , implementation: new YearSimilarity()
  */
 //m.add rule : ( artistName(A,AName) & artistName(B,BName) & (A ^ B) & sameName(AName,BName) ) >> sameArtist(A,B),  weight : 5
 
-m.add rule : ( trackTitle(A,AName) & trackTitle(B,BName) & (A ^ B) & sameName(AName,BName)) >> sameTrack(A,B),  weight : 5
-m.add rule : ( trackYear(A,AYear) & trackYear(B,BYear) & sameYear(AYear,BYear)) >> sameTrack(A,B),  weight : 3
-m.add rule : (trackArtist(A, AArtist) & trackArtist(B, BArtist) & (A ^ B) & sameName(AArtist, BArtist)) >> sameTrack(A,B),  weight : 5
-m.add rule : (trackAlbum(A, AAlbum) & trackAlbum(B, BAlbum) & (A ^ B) & sameName(AAlbum, BAlbum)) >> sameTrack(A,B),  weight : 3
-
+m.add rule : ( trackTitle(A,AName) & trackTitle(B,BName) & sameName(AName,BName) & trackSource(A, ASource) & trackSource(B, BSource) & ~sameSource(ASource, BSource)) >> sameTrack(A,B),  weight : 5
+m.add rule : ( trackYear(A,AYear) & trackYear(B,BYear) & sameYear(AYear,BYear) & trackSource(A, ASource) & trackSource(B, BSource) & ~sameSource(ASource, BSource)) >> sameTrack(A,B),  weight : 3
+m.add rule : (trackArtist(A, AArtist) & trackArtist(B, BArtist) & sameName(AArtist, BArtist) & trackSource(A, ASource) & trackSource(B, BSource) & ~sameSource(ASource, BSource)) >> sameTrack(A,B),  weight : 5
+m.add rule : (trackAlbum(A, AAlbum) & trackAlbum(B, BAlbum) & sameName(AAlbum, BAlbum) & trackSource(A, ASource) & trackSource(B, BSource) & ~sameSource(ASource, BSource)) >> sameTrack(A,B),  weight : 3
+m.add rule : (trackSource(A, ASource) & trackSource(B, BSource) & sameSource(ASource, BSource)) >> ~sameTrack(A,B), constraint : true
 /* Now, we move on to defining rules with sets. Before we can use sets in rules, we have to define how we would like those sets
  * to be compared. For this we define the set comparison predicate 'sameFriends' which compares two sets of friends. For each
  * set comparison predicate, we need to specify the type of aggregator function to use, in this case its the Jaccard equality,
@@ -100,12 +102,13 @@ m.add rule : (trackAlbum(A, AAlbum) & trackAlbum(B, BAlbum) & (A ^ B) & sameName
  * the 'inv' or 'inverse' keyword to denote its inverse.
  */
 
-m.add setcomparison: "sameTracks" , using: SetComparison.CrossEquality, on : sameTrack
+//m.add setcomparison: "sameTracks" , using: SetComparison.CrossEquality, on : sameTrack
 
-//m.add rule : (artistHasTracks(A, ATrack) & artistHasTracks(B, BTrack) & sameTrack(ATrack, BTrack) & (A ^ B)) >> sameArtist(A, B) , weight : 5
+m.add rule : (artistHasTracks(A, ATrack) & artistHasTracks(B, BTrack) & sameTrack(ATrack, BTrack)) >> sameArtist(A, B) , weight : 5
+m.add rule : (artistSource(A, ASource) & artistSource(B, BSource) & sameSource(ASource, BSource)) >> ~sameArtist(A, B), constraint : true
 
 //m.add rule :  (sameArtist(A, B) & (A ^ B )) >> sameTracks( {A.artistHasTracks} , {B.artistHasTracks} ) , weight : 3
-m.add rule :  ((A ^ B) & sameTracks( {A.artistHasTracks} , {B.artistHasTracks} )) >> sameArtist(A, B) , weight : 3
+//m.add rule :  ((A ^ B) & sameTracks( {A.artistHasTracks} , {B.artistHasTracks} )) >> sameArtist(A, B) , weight : 3
 
 /* Next, we define some constraints for our model. In this case, we restrict that each person can be aligned to at most one other person
  * in the other social network. To do so, we define two partial functional constraints where the latter is on the inverse.
@@ -124,14 +127,14 @@ m.add PredicateConstraint.Symmetric, on : sameArtist
  * people are not the samePerson with a little bit of weight. This can be overridden with evidence as defined
  * in the previous rules.
  */
-m.add rule: ~sameTrack(A,B), weight: 1
-m.add rule: ~sameArtist(A,B), weight: 1
+m.add rule: ~sameTrack(A, B), weight: 1
+m.add rule: ~sameArtist(A, B), weight: 1
 
 println m;
 
-//def dir = '/data/proc/psl/testData/';
-def dir = '/Users/qiusha/dev/senzari/psl/testData/';
-def p0 = new Partition(1);
+def dir = '/data/proc/psl/testData/';
+//def dir = '/Users/qiusha/dev/senzari/psl/testData/';
+def p0 = new Partition(0);
 
 insert = data.getInserter(trackTitle, p0);
 InserterUtils.loadDelimitedData(insert, dir+"trackTitle");
@@ -149,7 +152,13 @@ InserterUtils.loadDelimitedData(insert, dir+"trackYear");
 insert = data.getInserter(artistHasTracks, p0);
 InserterUtils.loadDelimitedData(insert, dir+"artistHasTracks");
 
-Database db = data.getDatabase(p0, [TrackTitle, TrackArtist, TrackAlbum, TrackYear, ArtistHasTracks] as Set);
+insert = data.getInserter(trackSource, p0);
+InserterUtils.loadDelimitedData(insert, dir+"trackSource");
+
+insert = data.getInserter(artistSource, p0);
+InserterUtils.loadDelimitedData(insert, dir+"artistSource");
+
+Database db = data.getDatabase(p0, [TrackTitle, TrackArtist, TrackAlbum, TrackYear, ArtistHasTracks, trackSource, artistSource] as Set);
 LazyMPEInference inferenceApp = new LazyMPEInference(m, db, config);
 inferenceApp.mpeInference();
 inferenceApp.close();
@@ -171,7 +180,6 @@ if(artistFile.exists())
 for (GroundAtom atom : Queries.getAllAtoms(db, SameArtist))
     artistFile << atom.toString() + "\t" + atom.getValue() + "\n";
 
-/*
 class YearSimilarity implements ExternalFunction {
 
     @Override
@@ -194,4 +202,26 @@ class YearSimilarity implements ExternalFunction {
     }
 
 }
-*/
+
+class SourceSimilarity implements ExternalFunction {
+
+    @Override
+    public int getArity() {
+        return 2;
+    }
+
+    @Override
+    public ArgumentType[] getArgumentTypes() {
+        return [ArgumentType.String, ArgumentType.String].toArray();
+    }
+
+    @Override
+    public double getValue(ReadOnlyDatabase db, GroundTerm... args) {
+        try {
+            return args[0].getValue() == args[1].getValue() ? 1.0 : 0.0;
+        }catch(Exception e){
+            return 0.0
+        }
+    }
+
+}
