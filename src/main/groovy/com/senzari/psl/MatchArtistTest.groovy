@@ -117,10 +117,10 @@ m.add rule : (artistSource(A, ASource) & artistSource(B, BSource) & sameSource(A
 
 m.add PredicateConstraint.PartialFunctional , on : sameTrack
 m.add PredicateConstraint.PartialInverseFunctional , on : sameTrack
-m.add PredicateConstraint.Symmetric, on : sameTrack
+//m.add PredicateConstraint.Symmetric, on : sameTrack
 m.add PredicateConstraint.PartialFunctional , on : sameArtist
 m.add PredicateConstraint.PartialInverseFunctional , on : sameArtist
-m.add PredicateConstraint.Symmetric, on : sameArtist
+//m.add PredicateConstraint.Symmetric, on : sameArtist
 
 /*
  * Finally, we define a prior on the inference predicate samePerson. It says that we should assume two
@@ -132,7 +132,7 @@ m.add rule: ~sameArtist(A, B), weight: 1
 
 println m;
 
-def dir = '/data/proc/psl/testData/';
+def dir = '/mnt/psl/testData/';
 //def dir = '/Users/qiusha/dev/senzari/psl/testData/';
 def p0 = new Partition(0);
 
